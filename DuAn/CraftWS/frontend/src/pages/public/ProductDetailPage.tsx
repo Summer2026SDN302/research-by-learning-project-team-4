@@ -24,7 +24,7 @@ const ProductDetailPage: React.FC = () => {
           <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">{product.category}</span>
           <h1 className="font-headline-lg text-headline-md text-deep-earth mt-4 mb-3">{product.name}</h1>
           <div className="flex items-center gap-2 mb-4">
-            <div className="flex">{[...Array(Math.round(product.rating))].map((_, i) => <Star key={i} size={16} className="text-amber-500 fill-amber-500" />)}</div>
+            <div className="flex">{[...Array(Math.round(product.rating ?? 0))].map((_, i) => <Star key={i} size={16} className="text-amber-500 fill-amber-500" />)}</div>
             <span className="text-sm text-on-surface-variant">{product.rating} ({product.totalReviews} đánh giá)</span>
           </div>
           <p className="text-3xl font-bold text-primary mb-6">{formatCurrencyShort(product.price)}</p>

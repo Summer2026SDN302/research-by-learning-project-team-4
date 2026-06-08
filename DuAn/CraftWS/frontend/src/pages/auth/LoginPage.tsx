@@ -8,16 +8,18 @@ import { getRoleRedirectPath } from '../../utils/roleRedirect';
 import { users } from '../../utils/mockData';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import { FcGoogle } from 'react-icons/fc';
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = async (data: LoginFormData) => {
     setError('');
-    // Mock login: tìm user theo email trong mockData
     const foundUser = users.find((u) => u.email === data.email);
     if (foundUser) {
       login('mock-token-' + foundUser._id, foundUser);
@@ -27,38 +29,84 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="w-full max-w-md mx-auto">
-      <h1 className="font-headline-lg text-headline-md text-deep-earth mb-2">Đăng nhập</h1>
-      <p className="text-on-surface-variant mb-8">Chào mừng bạn trở lại CraftLocal</p>
+  const handleGoogleLogin = () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (apiUrl) {
+        window.location.href = `${apiUrl}/auth/google`;
+      } else {
+        alert("Tính năng đăng nhập Google hiện đang được thử nghiệm!");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-      {error && <div className="mb-4 p-3 bg-error/10 text-error rounded-lg text-sm">{error}</div>}
+  return (
+    <div className="w-full max-w-[460px] mx-auto rounded-3xl border border-[#EAD8CC] bg-[#FFFDF8]/95 p-8 md:p-10 shadow-[0_24px_80px_rgba(61,43,31,0.12)] backdrop-blur">
+      <h1 className="font-headline-lg text-headline-md text-[#3D2B1F] mb-1">Đăng nhập</h1>
+      <p className="text-[#7A6255] mb-8 text-sm">Chào mừng bạn trở lại CraftLocal</p>
+
+      {error && (
+        <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <Input label="Email" type="email" placeholder="email@example.com" error={errors.email?.message} {...register('email')} />
-        <Input label="Mật khẩu" type="password" placeholder="••••••••" error={errors.password?.message} {...register('password')} />
+        <Input
+          label="Email"
+          type="email"
+          placeholder="email@example.com"
+          icon={<Mail className="h-5 w-5" />}
+          error={errors.email?.message}
+          {...register('email')}
+        />
+        <Input
+          label="Mật khẩu"
+          type={showPwd ? 'text' : 'password'}
+          placeholder="••••••••"
+          icon={<Lock className="h-5 w-5" />}
+          rightIcon={
+            <button type="button" onClick={() => setShowPwd(!showPwd)} className="p-0.5 hover:text-[#964824] transition-colors" tabIndex={-1}>
+              {showPwd ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          }
+          error={errors.password?.message}
+          {...register('password')}
+        />
         <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" className="rounded border-outline-variant" /> Ghi nhớ đăng nhập
+          <label className="flex items-center gap-2.5 cursor-pointer select-none text-[#3D2B1F]">
+            <input type="checkbox" className="h-4 w-4 rounded border-[#D8C3B5] text-[#964824] focus:ring-[#964824] focus:ring-offset-0" />
+            Ghi nhớ đăng nhập
           </label>
-          <span className="text-primary cursor-pointer hover:underline">Quên mật khẩu?</span>
+          <span className="text-[#964824] cursor-pointer hover:underline font-medium">Quên mật khẩu?</span>
         </div>
-        <Button type="submit" fullWidth isLoading={isSubmitting}>Đăng nhập</Button>
+        <Button type="submit" fullWidth size="lg" isLoading={isSubmitting}>Đăng nhập</Button>
       </form>
 
-      <p className="text-center mt-6 text-sm text-on-surface-variant">
-        Chưa có tài khoản?{' '}
-        <Link to="/register" className="text-primary font-semibold hover:underline">Đăng ký</Link>
-      </p>
-
-      <div className="mt-8 p-4 bg-soft-clay/50 rounded-xl text-xs text-on-surface-variant">
-        <p className="font-semibold mb-2">Tài khoản demo:</p>
-        <p>👑 Quản trị viên: <span className="font-mono text-primary">admin@craftlocal.vn</span></p>
-        <p>🏺 Chủ xưởng: <span className="font-mono text-primary">toan@craftlocal.vn</span></p>
-        <p>🧳 Khách du lịch: <span className="font-mono text-primary">sarah@example.com</span></p>
-        <p>🧭 Hướng dẫn viên: <span className="font-mono text-primary">minh@craftlocal.vn</span></p>
-        <p className="mt-1 italic">(Mật khẩu: nhập bất kỳ)</p>
+      {/* Divider */}
+      <div className="my-6 flex items-center gap-4">
+        <div className="flex-1 h-px bg-[#EAD8CC]" />
+        <span className="text-sm text-[#7A6255]">hoặc</span>
+        <div className="flex-1 h-px bg-[#EAD8CC]" />
       </div>
+
+      {/* Google Login Button */}
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        className="w-full h-[52px] flex items-center justify-center gap-3 rounded-2xl border-2 border-[#E3CFC2] bg-white text-[#3D2B1F] font-semibold hover:bg-[#FAF7F2] hover:border-[#964824]/30 transition-all"
+      >
+        <FcGoogle className="text-xl" />
+        <span>Tiếp tục với Google</span>
+      </button>
+
+      <p className="text-center mt-8 text-sm text-[#7A6255]">
+        Chưa có tài khoản?{' '}
+        <Link to="/register" className="text-[#964824] font-semibold hover:underline">Đăng ký</Link>
+      </p>
     </div>
   );
 };
