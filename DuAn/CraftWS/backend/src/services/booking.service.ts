@@ -5,33 +5,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class BookingService {
   /**
-   * Tạo booking với chống overbooking bằng atomic update
+   * Tạo booking: kiểm tra chỗ nhưng chưa trừ slot (trừ ở payment success)
    */
   static async createBooking(touristId: string, timeslotId: string, quantity: number) {
-    // Atomic update: chỉ thành công nếu availableSlots >= quantity
-    const timeslot = await Timeslot.findOneAndUpdate(
-      {
-        _id: timeslotId,
-        availableSlots: { $gte: quantity },
-        status: 'AVAILABLE',
-      },
-      {
-        $inc: {
-          bookedSlots: quantity,
-          availableSlots: -quantity,
-        },
-      },
-      { new: true }
-    );
-
+    const timeslot = await Timeslot.findById(timeslotId);
     if (!timeslot) {
-      throw new Error('Không đủ chỗ trống hoặc khung giờ không khả dụng');
+      throw new Error('Khung giờ không tồn tại');
     }
-
-    // Nếu hết chỗ thì cập nhật status FULL
-    if (timeslot.availableSlots === 0) {
-      timeslot.status = 'FULL';
-      await timeslot.save();
+    if (timeslot.status !== 'AVAILABLE') {
+      throw new Error('Khung giờ không khả dụng');
+    }
+    if (timeslot.availableSlots < quantity) {
+      throw new Error('Không đủ chỗ trống trong khung giờ này');
     }
 
     const workshop = await Workshop.findById(timeslot.workshopId);
@@ -53,11 +38,7 @@ export class BookingService {
       bookingStatus: 'PENDING',
     });
 
-    // Tăng totalBookings cho workshop
-    await Workshop.findByIdAndUpdate(timeslot.workshopId, {
-      $inc: { totalBookings: quantity },
-    });
-
     return booking;
   }
 }
+

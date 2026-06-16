@@ -30,9 +30,17 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    if (user.status !== 'ACTIVE') {
-      sendError(res, 'Tài khoản đã bị khóa hoặc chưa được kích hoạt', 403);
+    if (user.status === 'BLOCKED') {
+      sendError(res, 'Tài khoản đã bị khóa', 403);
       return;
+    }
+
+    if (user.status === 'PENDING') {
+      const isAllowedPath = req.originalUrl.endsWith('/profile') || req.path === '/profile';
+      if (!isAllowedPath) {
+        sendError(res, 'Tài khoản đang chờ phê duyệt. Không thể thực hiện thao tác này.', 403);
+        return;
+      }
     }
 
     req.user = user;

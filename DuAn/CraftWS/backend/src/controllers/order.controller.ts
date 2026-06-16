@@ -17,22 +17,22 @@ export const checkout = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, 'Một số sản phẩm không khả dụng');
   }
 
-  // Kiểm tra stock & tính giá
-  const orderItems = [];
-  let productTotal = 0;
-  let hostId: string | null = null;
-
+  // Gom nhóm sản phẩm theo hostId
+  const itemsByHost: Record<string, any[]> = {};
   for (const item of items) {
     const product = products.find((p) => p._id.toString() === item.productId);
     if (!product) return sendError(res, `Sản phẩm ${item.productId} không tồn tại`);
-    if (product.stock < item.quantity) return sendError(res, `Sản phẩm "${product.name}" không đủ số lượng (còn ${product.stock})`);
+    if (product.stock < item.quantity) {
+      return sendError(res, `Sản phẩm "${product.name}" không đủ số lượng (còn ${product.stock})`);
+    }
 
-    if (!hostId) hostId = product.hostId.toString();
+    const hId = product.hostId.toString();
+    if (!itemsByHost[hId]) {
+      itemsByHost[hId] = [];
+    }
 
     const subtotal = product.price * item.quantity;
-    productTotal += subtotal;
-
-    orderItems.push({
+    itemsByHost[hId].push({
       productId: product._id,
       name: product.name,
       image: product.images[0] || '',
@@ -42,22 +42,30 @@ export const checkout = asyncHandler(async (req: Request, res: Response) => {
     });
   }
 
-  const orderCode = `ORD-${Date.now()}-${uuidv4().slice(0, 6).toUpperCase()}`;
-  const totalAmount = productTotal + SHIPPING_FEE;
+  const createdOrders = [];
+  const entries = Object.entries(itemsByHost);
 
-  const order = await Order.create({
-    orderCode,
-    touristId: req.user!._id,
-    hostId,
-    items: orderItems,
-    shippingAddress,
-    productTotal,
-    shippingFee: SHIPPING_FEE,
-    totalAmount,
-    orderStatus: 'PENDING',
-  });
+  for (let i = 0; i < entries.length; i++) {
+    const [hId, hostItems] = entries[i];
+    const productTotal = hostItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const orderCode = `ORD-${Date.now()}-${uuidv4().slice(0, 6).toUpperCase()}-${i}`;
+    const totalAmount = productTotal + SHIPPING_FEE;
 
-  sendSuccess(res, 'Đặt hàng thành công! Vui lòng thanh toán.', order, 201);
+    const order = await Order.create({
+      orderCode,
+      touristId: req.user!._id,
+      hostId: hId,
+      items: hostItems,
+      shippingAddress,
+      productTotal,
+      shippingFee: SHIPPING_FEE,
+      totalAmount,
+      orderStatus: 'PENDING',
+    });
+    createdOrders.push(order);
+  }
+
+  sendSuccess(res, 'Đặt hàng thành công! Vui lòng thanh toán.', createdOrders, 201);
 });
 
 export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {

@@ -24,7 +24,6 @@ export class AuthService {
     if (!isMatch) throw new Error('Email hoặc mật khẩu không đúng');
 
     if (user.status === 'BLOCKED') throw new Error('Tài khoản đã bị khóa');
-    if (user.status === 'PENDING') throw new Error('Tài khoản đang chờ được phê duyệt');
 
     const token = generateToken(user._id.toString(), user.role);
     const userObj = user.toObject();
