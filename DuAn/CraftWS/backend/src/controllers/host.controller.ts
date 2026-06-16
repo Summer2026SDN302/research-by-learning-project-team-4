@@ -5,24 +5,55 @@ import User from '../models/user.model';
 import Booking from '../models/booking.model';
 import Order from '../models/order.model';
 import Workshop from '../models/workshop.model';
+import Timeslot from '../models/timeslot.model';
 
 export const getDashboard = asyncHandler(async (req: Request, res: Response) => {
   const hostId = req.user!._id;
-  const [todayBookings, monthlyRevenue, activeWorkshops, pendingOrders] = await Promise.all([
-    Booking.countDocuments({ hostId, createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } }),
+  const [
+    totalWorkshops,
+    totalTimeslots,
+    totalBookings,
+    totalOrders,
+    bookingRevenue,
+    orderRevenue,
+    pendingOrders,
+    todaySchedules,
+    topWorkshops
+  ] = await Promise.all([
+    Workshop.countDocuments({ hostId }),
+    Timeslot.countDocuments({ hostId }),
+    Booking.countDocuments({ hostId }),
+    Order.countDocuments({ hostId }),
     Booking.aggregate([
       { $match: { hostId, bookingStatus: { $in: ['PAID', 'CHECKED_IN', 'COMPLETED'] } } },
       { $group: { _id: null, total: { $sum: '$totalPrice' } } },
     ]),
-    Workshop.countDocuments({ hostId, status: 'ACTIVE' }),
+    Order.aggregate([
+      { $match: { hostId, orderStatus: { $in: ['CONFIRMED', 'PACKING', 'SHIPPING', 'COMPLETED'] } } },
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+    ]),
     Order.countDocuments({ hostId, orderStatus: 'PENDING' }),
+    Timeslot.find({
+      hostId,
+      startTime: {
+        $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        $lt: new Date(new Date().setHours(23, 59, 59, 999))
+      }
+    }).populate('workshopId', 'title').populate('tourGuideId', 'fullName'),
+    Workshop.find({ hostId }).sort({ totalBookings: -1, averageRating: -1 }).limit(5)
   ]);
 
+  const totalRevenue = (bookingRevenue[0]?.total || 0) + (orderRevenue[0]?.total || 0);
+
   sendSuccess(res, 'Lấy dashboard thành công', {
-    todayBookings,
-    monthlyRevenue: monthlyRevenue[0]?.total || 0,
-    activeWorkshops,
+    totalWorkshops,
+    totalTimeslots,
+    totalBookings,
+    totalOrders,
+    totalRevenue,
     pendingOrders,
+    todaySchedules,
+    topWorkshops
   });
 });
 
