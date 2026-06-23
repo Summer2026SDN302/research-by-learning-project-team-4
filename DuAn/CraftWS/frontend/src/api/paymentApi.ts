@@ -1,12 +1,17 @@
 import axiosClient from './axiosClient';
 
 const paymentApi = {
-  createVNPay: (data: { bookingId?: string; orderId?: string; amount: number }) =>
-    axiosClient.post('/payments/vnpay', data),
-  createMoMo: (data: { bookingId?: string; orderId?: string; amount: number }) =>
-    axiosClient.post('/payments/momo', data),
-  verifyPayment: (params: Record<string, string>) =>
-    axiosClient.get('/payments/verify', { params }),
+  createBookingPayment: (bookingId: string) =>
+    axiosClient.post('/payments/payos/create-booking-payment', { bookingId }),
+
+  createOrderPayment: (orderId: string) =>
+    axiosClient.post('/payments/payos/create-order-payment', { orderId }),
+
+  getPaymentStatus: (orderCode: string | number) =>
+    axiosClient.get(`/payments/payos/status/${orderCode}`),
+
+  cancelPayment: (orderCode: string | number) =>
+    axiosClient.post(`/payments/payos/cancel/${orderCode}`),
 };
 
 export default paymentApi;
