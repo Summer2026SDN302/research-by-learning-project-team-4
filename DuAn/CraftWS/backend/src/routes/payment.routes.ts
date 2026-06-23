@@ -1,13 +1,21 @@
 import { Router } from 'express';
-import { createPaymentUrl, mockSuccess, getPaymentStatus, vnpayCallback, momoCallback } from '../controllers/payment.controller';
+import {
+  createBookingPayOSPayment,
+  createOrderPayOSPayment,
+  payosWebhook,
+  getPayOSPaymentStatus,
+  cancelPayOSPayment,
+} from '../controllers/payment.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
+import { roleMiddleware } from '../middlewares/role.middleware';
 
 const router = Router();
 
-router.post('/create-payment-url', authMiddleware, createPaymentUrl);
-router.get('/vnpay-callback', vnpayCallback);
-router.post('/momo-callback', momoCallback);
-router.get('/:id/status', authMiddleware, getPaymentStatus);
-router.post('/mock-success/:id', authMiddleware, mockSuccess);
+// payOS payment routes
+router.post('/payos/create-booking-payment', authMiddleware, roleMiddleware('TOURIST'), createBookingPayOSPayment);
+router.post('/payos/create-order-payment', authMiddleware, roleMiddleware('TOURIST'), createOrderPayOSPayment);
+router.post('/payos/webhook', payosWebhook); // Public - no auth
+router.get('/payos/status/:orderCode', authMiddleware, getPayOSPaymentStatus);
+router.post('/payos/cancel/:orderCode', authMiddleware, cancelPayOSPayment);
 
 export default router;

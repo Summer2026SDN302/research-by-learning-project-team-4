@@ -20,6 +20,7 @@ import paymentRoutes from './routes/payment.routes';
 import reviewRoutes from './routes/review.routes';
 import tourGuideRoutes from './routes/tourGuide.routes';
 import categoryRoutes from './routes/category.routes';
+import uploadRoutes from './routes/upload.routes';
 
 const app = express();
 
@@ -31,7 +32,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Static files for images
-app.use('/images', express.static(path.join(__dirname, '../../public/images')));
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
 // Rate limiting & Trust Proxy
 app.set('trust proxy', 1);
@@ -85,6 +86,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/tour-guide', tourGuideRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((_req, res) => {
